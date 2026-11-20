@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Roulette</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0f1220;color:#f2f4ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);overflow:hidden}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px}
+.chip{display:flex;flex-direction:column;background:#1b2036;border:1px solid #2b3354;border-radius:14px;padding:8px 14px;min-width:0;max-width:44vw}
+.chip small{font-size:11px;color:#8d96c4;letter-spacing:.04em;text-transform:uppercase}
+.chip b{font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{background:#1b2036;border:1px solid #2b3354;border-radius:14px;padding:10px 14px;font-size:15px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.iconbtn:active{background:#262d4d}
+.right{display:flex;gap:8px;align-items:center;margin-left:auto}
+.badge{background:#ff5d73;color:#fff;border-radius:10px;font-size:12px;padding:1px 7px}
+.stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:6px}
+.wheelwrap{position:relative;width:min(94vw,calc(100dvh - 262px),620px);aspect-ratio:1}
+.wheelbar{display:flex;justify-content:center;padding:0 14px}
+.wheelbtn{background:#1b2036;border:1px solid #2b3354;border-radius:14px;padding:9px 16px;font-size:16px;font-weight:600;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wheelbtn:active{background:#262d4d}
+.item.cur{border-color:#4c6fff;background:#1d2547}
+.item .grow{flex:1;min-width:0;cursor:pointer}
+.item .grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .grow small{color:#8d96c4}
+#wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 0 0 6px #232a4a,0 0 0 9px #3a4476,0 12px 40px rgba(0,0,0,.6);transform:rotate(0rad);will-change:transform;touch-action:manipulation}
+.pointer{position:absolute;left:50%;top:-14px;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:30px solid #fff;filter:drop-shadow(0 3px 4px rgba(0,0,0,.6));z-index:3;pointer-events:none}
+#push{position:absolute;left:50%;top:50%;width:24%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a9a,#e8294a 70%);box-shadow:0 0 0 5px #fff,0 6px 18px rgba(0,0,0,.6);font-weight:800;font-size:clamp(11px,3.6vw,18px);letter-spacing:.04em;z-index:4;color:#fff}
+#push:active{transform:translate(-50%,-50%) scale(.94)}
+#push:disabled{filter:grayscale(.8) brightness(.7);cursor:default}
+.empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:30%;color:#aab2dc;z-index:2;pointer-events:none;font-size:15px}
+.bottom{padding:10px 14px 16px;display:flex;justify-content:center;gap:10px}
+.danger{background:#2a1c2a;border:1px solid #6b2c46;color:#ffb3c2;border-radius:14px;padding:12px 22px;font-size:15px}
+.danger:active{background:#3a2237}
+.status{text-align:center;color:#8d96c4;font-size:13px;padding-bottom:2px;min-height:18px}
+/* modal */
+.overlay{position:fixed;inset:0;background:rgba(5,7,15,.72);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#171c32;border:1px solid #2f3860;border-radius:20px;width:100%;max-width:420px;max-height:88dvh;overflow:auto;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal h2{margin:0 0 4px;font-size:22px}
+.modal .sub{color:#8d96c4;font-size:13px;margin-bottom:12px}
+.modal img.pic{width:100%;max-height:280px;object-fit:cover;border-radius:14px;margin:6px 0 10px;display:block}
+.modal p{margin:6px 0 14px;line-height:1.5;white-space:pre-wrap;color:#d6dbf5}
+.btn{background:#4c6fff;border-radius:12px;padding:12px 18px;font-weight:600;width:100%}
+.btn.sec{background:#262d4d}
+.btn.red{background:#e8294a}
+.row{display:flex;gap:10px}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:8px;vertical-align:-2px}
+/* sheet */
+.sheet{position:fixed;inset:0;background:#0f1220;z-index:15;display:none;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.sheet.open{display:flex}
+.sheethead{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #232a4a}
+.sheethead h3{margin:0;font-size:18px}
+.tabs{display:flex;gap:8px;padding:10px 14px}
+.tab{flex:1;background:#1b2036;border-radius:12px;padding:10px;font-weight:600;color:#8d96c4}
+.tab.on{background:#4c6fff;color:#fff}
+.sheetbody{flex:1;overflow:auto;padding:4px 14px 24px}
+input[type=text],textarea{width:100%;background:#1b2036;border:1px solid #2b3354;border-radius:12px;padding:12px;color:#f2f4ff;font:inherit;font-size:16px;outline:none}
+input[type=text]:focus,textarea:focus{border-color:#4c6fff}
+textarea{resize:vertical;min-height:70px}
+.field{margin-bottom:10px}
+.item{display:flex;align-items:center;gap:10px;background:#1b2036;border:1px solid #2b3354;border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.item .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .name input{padding:8px 10px}
+.item img{width:38px;height:38px;border-radius:8px;object-fit:cover}
+.mini{background:#262d4d;border-radius:10px;padding:8px 11px;font-size:14px}
+.mini.del{color:#ff8da0}
+.count{color:#8d96c4;font-size:13px;margin:6px 0 10px;display:flex;justify-content:space-between;align-items:center}
+.imgrow{display:flex;gap:10px;align-items:center}
+.imgrow img{width:56px;height:56px;border-radius:10px;object-fit:cover}
+.toggle{display:flex;align-items:center;gap:10px;background:#1b2036;border:1px solid #2b3354;border-radius:12px;padding:12px;margin-bottom:12px;font-size:14px}
+.toggle input{width:20px;height:20px}
+.logitem{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #232a4a;cursor:pointer}
+.logitem .who{font-weight:600}
+.logitem .what{color:#aab2dc;font-size:14px}
+.logitem .no{color:#5b6592;width:26px;text-align:right;font-size:13px}
+.muted{color:#8d96c4;text-align:center;padding:24px 0}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="chip" id="turnChip"><small>Sıra</small><b id="turnName">—</b></div>
+  <div class="right">
+    <button class="iconbtn" id="btnSettings" aria-label="Ayarlar">⚙️</button>
+    <button class="iconbtn" id="btnLog">📜 Log <span class="badge" id="logCount">0</span></button>
+  </div>
+</div>
+
+<div class="wheelbar"><button class="wheelbtn" id="btnWheels">🎡 <span id="wheelTitle">Çark</span> ▾</button></div>
+
+<div class="stage">
+  <div class="wheelwrap" id="wrap">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="1000" height="1000"></canvas>
+    <div class="empty" id="emptyMsg">Çark boş.<br>⚙️ ayarlardan seçenek ekle.</div>
+    <button id="push">ÇEVİR</button>
+  </div>
+</div>
+
+<div class="status" id="status"></div>
+<div class="bottom"><button class="danger" id="btnReset">↺ Turu sıfırla</button></div>
+
+<!-- Detay / sonuç modalı -->
+<div class="overlay" id="ovDetail"><div class="modal" id="detailBox"></div></div>
+<!-- Log modalı -->
+<div class="overlay" id="ovLog"><div class="modal">
+  <h2>Çıkanlar</h2><div class="sub">Kime ne çıktı (en yeni üstte)</div>
+  <div id="logList"></div>
+  <button class="btn sec" id="logClose" style="margin-top:12px">Kapat</button>
+</div></div>
+<!-- Çarklar -->
+<div class="overlay" id="ovWheels"><div class="modal">
+  <h2>Çarklarım</h2><div class="sub">Dokunarak çarka geç. Her çarkın kullanıcıları, seçenekleri ve logu ayrı saklanır.</div>
+  <div id="wheelList"></div>
+  <div style="border-top:1px solid #232a4a;margin:12px 0 10px"></div>
+  <div class="field"><input type="text" id="newWheelName" placeholder="Yeni çark adı" maxlength="30"></div>
+  <label class="toggle" style="margin-bottom:10px"><input type="checkbox" id="copyUsers"> Kullanıcıları mevcut çarktan kopyala</label>
+  <div class="row"><button class="btn sec" id="wheelsClose">Kapat</button><button class="btn" id="wheelAdd">Çark oluştur</button></div>
+  <button class="btn sec" id="btnImport" style="margin-top:10px">📥 Arkadaşımdan gelen çarkı içe aktar</button>
+</div></div>
+<!-- Paylaş -->
+<div class="overlay" id="ovShare"><div class="modal">
+  <h2>Çarkı paylaş</h2><div class="sub" id="shInfo"></div>
+  <p style="margin-top:0">Sadece çarkın adı ve seçenekleri (başlık, detay, görsel) gider. Kullanıcı listesi, log ve ayarlar gönderilmez.</p>
+  <label class="toggle" id="shImgRow"><input type="checkbox" id="shImg" checked> Görselleri de ekle (dosya büyür)</label>
+  <button class="btn" id="shSend" style="margin-bottom:10px">📤 Dosya olarak paylaş (WhatsApp vb.)</button>
+  <a class="btn sec" id="shWa" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px;color:inherit">💬 WhatsApp'a metin olarak gönder</a>
+  <button class="btn sec" id="shCopy" style="margin-bottom:10px">📋 Kopyala</button>
+  <div class="sub" id="shMsg" style="min-height:16px"></div>
+  <textarea id="shBox" readonly style="display:none;min-height:110px;margin-bottom:10px"></textarea>
+  <button class="btn sec" id="shClose">Kapat</button>
+</div></div>
+<!-- İçe aktar -->
+<div class="overlay" id="ovImport"><div class="modal">
+  <h2>Çarkı içe aktar</h2><div class="sub">Gelen dosyayı seç ya da kopyaladığın metni yapıştır.</div>
+  <input type="file" id="impFile" style="display:none">
+  <button class="btn sec" id="impPick" style="margin-bottom:10px">📁 Dosya seç (.json)</button>
+  <div class="field"><textarea id="impText" placeholder="Veya çark metnini buraya yapıştır" style="min-height:90px"></textarea></div>
+  <div class="sub" id="impMsg" style="min-height:16px;color:#ffb3c2"></div>
+  <div class="row"><button class="btn sec" id="impClose">Vazgeç</button><button class="btn" id="impGo">İçe aktar</button></div>
+</div></div>
+<!-- Onay -->
+<div class="overlay" id="ovConfirm"><div class="modal">
+  <h2 id="cTitle">Emin misin?</h2><p id="cText"></p>
+  <div class="row"><button class="btn sec" id="cNo">Vazgeç</button><button class="btn red" id="cYes">Evet</button></div>
+</div></div>
+
+<!-- Ayarlar -->
+<div class="sheet" id="sheet">
+  <div class="sheethead"><h3>Ayarlar</h3><button class="mini" id="sheetClose">✕ Kapat</button></div>
+  <div class="field" style="padding:10px 14px 0;margin:0"><input type="text" id="wheelName" placeholder="Çark adı" maxlength="30"></div>
+  <div class="tabs"><button class="tab on" data-tab="users">Kullanıcılar</button><button class="tab" data-tab="opts">Seçenekler</button></div>
+  <div class="sheetbody" id="tabUsers">
+    <label class="toggle"><input type="checkbox" id="useUsers"> Kullanıcı modu (sıra kullanıcılar arasında döner)</label>
+    <div id="usersPanel">
+    <div class="count"><span id="userCount"></span></div>
+    <div class="field row"><input type="text" id="userName" placeholder="Kullanıcı adı" maxlength="24"><button class="mini" id="userAdd" style="padding:0 16px">Ekle</button></div>
+    <div id="userList"></div>
+    </div>
+  </div>
+  <div class="sheetbody" id="tabOpts" style="display:none">
+    <label class="toggle"><input type="checkbox" id="noLast"> Son çıkan bir sonraki çevirmede çıkmasın (çarkta görünür kalır)</label>
+    <label class="toggle"><input type="checkbox" id="noRepeat"> Çıkan seçenek tur boyunca tekrar çıkmasın</label>
+    <div class="count"><span id="optCount"></span><button class="mini del" id="optClear">Tümünü sil</button></div>
+    <div class="field"><input type="text" id="optTitle" placeholder="Başlık (çarkta görünür)" maxlength="40"></div>
+    <div class="field"><textarea id="optDetail" placeholder="Detay (dokununca modalda görünür)"></textarea></div>
+    <div class="field imgrow">
+      <img id="optPrev" style="display:none" alt="">
+      <input type="file" id="optFile" accept="image/*" style="display:none">
+      <button class="mini" id="optPick">🖼 Görsel seç</button>
+      <button class="mini del" id="optImgDel" style="display:none">Görseli kaldır</button>
+    </div>
+    <div class="row" style="margin-bottom:14px"><button class="btn" id="optSave">Seçenek ekle</button><button class="btn sec" id="optCancel" style="display:none">İptal</button></div>
+    <div id="optList"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+const MAX_USERS=10, MAX_OPTS=100, KEY='roulette.v1';
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2;
+
+function newWheel(name){return {id:0,name:name,users:[],opts:[],log:[],turn:0,noRepeat:false,noLast:true,useUsers:true,used:[]}}
+let R={wheels:[],cur:0,seq:1}, S=newWheel('Çark 1');
+
+const PREF=(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Preferences)||null;
+function applyData(raw){
+  try{
+    if(!raw)return false;const d=JSON.parse(raw);
+    if(d&&d.wheels&&d.wheels.length){R=d}
+    else if(d&&d.opts){const w=Object.assign(newWheel('Çark 1'),d);delete w.seq;R={wheels:[w],cur:0,seq:d.seq||1};w.id=R.seq++;R.cur=w.id}
+    else return false;
+    R.wheels=R.wheels.map(w=>Object.assign(newWheel(''),w));
+    S=R.wheels.find(w=>w.id===R.cur)||R.wheels[0];R.cur=S.id;return true;
+  }catch(e){}
+  return false;
+}
+function save(){
+  let j;try{j=JSON.stringify(R)}catch(e){return}
+  try{localStorage.setItem(KEY,j)}catch(e){}
+  if(PREF){try{PREF.set({key:KEY,value:j})}catch(e){}}
+}
+
+function colorFor(i){
+  const h=(i*137.508)%360, l=[52,62,45,58][i%4];
+  return `hsl(${h.toFixed(1)},72%,${l}%)`;
+}
+function uid(){return R.seq++}
+
+function seedDefaults(){
+  S.users=[{id:uid(),name:'Oyuncu 1'},{id:uid(),name:'Oyuncu 2'}];
+  ['Pizza','Sinema','Yürüyüş','Kahve','Oyun gecesi','Kitap'].forEach((t,i)=>S.opts.push({id:uid(),title:t,detail:'',img:'',color:colorFor(i)}));
+}
+
+/* ---------- Çark ---------- */
+const cv=$('wheel'), ctx=cv.getContext('2d');
+let rot=0, spinning=false;
+function active(){return S.noRepeat?S.opts.filter(o=>!S.used.includes(o.id)):S.opts}
+function eligible(list){
+  const idx=list.map((_,i)=>i);
+  if(S.noLast&&S.log.length&&list.length>1){
+    const last=S.log[S.log.length-1].optId;
+    const f=idx.filter(i=>list[i].id!==last);
+    if(f.length)return f;
+  }
+  return idx;
+}
+function textColor(c){
+  const m=/hsl\(([\d.]+),(\d+)%,(\d+)%\)/.exec(c);if(!m)return '#fff';
+  return (+m[3])>56?'#1a1d2e':'#fff';
+}
+function draw(){
+  const W=cv.width,R=W/2,list=active(),n=list.length;
+  ctx.clearRect(0,0,W,W);
+  if(!n){ctx.fillStyle='#1b2036';ctx.beginPath();ctx.arc(R,R,R,0,TAU);ctx.fill();return}
+  const a=TAU/n;
+  for(let i=0;i<n;i++){
+    const s=-Math.PI/2+i*a;
+    ctx.beginPath();ctx.moveTo(R,R);ctx.arc(R,R,R-2,s,s+a);ctx.closePath();
+    ctx.fillStyle=list[i].color;ctx.fill();
+    if(n>1){ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=n>40?1:2;ctx.stroke()}
+  }
+  // yazılar: kenardan merkeze doğru
+  const inner=R*0.27, outer=R*0.94, maxLen=outer-inner;
+  for(let i=0;i<n;i++){
+    const mid=-Math.PI/2+(i+.5)*a;
+    const arcAtMid=a*R*0.7;
+    let fs=Math.max(7,Math.min(40,arcAtMid*0.62));
+    ctx.save();ctx.translate(R,R);ctx.rotate(mid);
+    ctx.font=`600 ${fs}px system-ui,sans-serif`;
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillStyle=textColor(list[i].color);
+    let t=list[i].title;
+    while(t.length>1&&ctx.measureText(t).width>maxLen)t=t.slice(0,-1);
+    if(t!==list[i].title)t=t.slice(0,-1)+'…';
+    ctx.fillText(t,outer,0);
+    ctx.restore();
+  }
+}
+function setRot(r,anim){
+  cv.style.transition=anim?'transform 5s cubic-bezier(.12,.62,.08,1)':'none';
+  cv.style.transform=`rotate(${r}rad)`;
+}
+function indexAtTheta(th,n){const t=((th%TAU)+TAU)%TAU;return Math.min(n-1,Math.floor(t/(TAU/n)))}
+
+/* ---------- Sıra / durum ---------- */
+function curUser(){return S.useUsers&&S.users.length?S.users[S.turn%S.users.length]:null}
+function refreshTop(){
+  const u=curUser();$('turnChip').style.display=S.useUsers?'':'none';$('turnName').textContent=u?u.name:'Kullanıcı ekle';
+  $('logCount').textContent=S.log.length;$('wheelTitle').textContent=S.name||'Çark';
+  const n=active().length;
+  $('push').disabled=spinning||n===0||(S.useUsers&&!S.users.length);
+  $('emptyMsg').style.display=S.opts.length===0?'flex':'none';
+  let st='';
+  if(S.useUsers&&!S.users.length)st='Önce ⚙️ ayarlardan kullanıcı ekle';
+  else if(S.opts.length&&n===0)st='Tüm seçenekler çıktı — turu sıfırla';
+  else if(n)st=n+' seçenek çarkta';
+  $('status').textContent=st;
+}
+
+/* ---------- Modal ---------- */
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function showDetail(o,sub,btnText){
+  $('detailBox').innerHTML=
+   `<h2><span class="dot" style="background:${o.color}"></span>${esc(o.title)}</h2>`+
+   (sub?`<div class="sub">${esc(sub)}</div>`:'<div class="sub"> </div>')+
+   (o.img?`<img class="pic" src="${o.img}" alt="">`:'')+
+   (o.detail?`<p>${esc(o.detail)}</p>`:'<p style="color:#8d96c4">Detay girilmemiş.</p>')+
+   `<button class="btn" id="detailOk">${btnText||'Kapat'}</button>`;
+  $('ovDetail').classList.add('open');
+  $('detailOk').onclick=()=>$('ovDetail').classList.remove('open');
+}
+$('ovDetail').addEventListener('click',e=>{if(e.target===$('ovDetail'))$('ovDetail').classList.remove('open')});
+function confirmBox(title,text,yes,cb){
+  $('cTitle').textContent=title;$('cText').textContent=text;$('cYes').textContent=yes;
+  $('ovConfirm').classList.add('open');
+  $('cYes').onclick=()=>{$('ovConfirm').classList.remove('open');cb()};
+}
+$('cNo').onclick=()=>$('ovConfirm').classList.remove('open');
+
+/* ---------- Çevir ---------- */
+function spin(){
+  const list=active(),n=list.length,u=curUser();
+  if(spinning||!n||(S.useUsers&&!u))return;
+  spinning=true;refreshTop();
+  const el=eligible(list),pick=el[Math.floor(Math.random()*el.length)],a=TAU/n;
+  const jitter=(Math.random()-.5)*a*0.7;
+  const want=((-(pick+.5)*a+jitter)%TAU+TAU)%TAU;
+  const cur=((rot%TAU)+TAU)%TAU;
+  const delta=((want-cur)%TAU+TAU)%TAU;
+  rot=rot+TAU*(5+Math.floor(Math.random()*3))+delta;
+  setRot(rot,true);
+  let done=false;
+  const fin=()=>{
+    if(done)return;done=true;
+    const o=list[indexAtTheta(-rot,n)];
+    S.log.push({user:u?u.name:'',optId:o.id,title:o.title,detail:o.detail,img:o.img,color:o.color,t:Date.now()});
+    if(S.noRepeat)S.used.push(o.id);
+    if(u)S.turn=(S.turn+1)%S.users.length;
+    spinning=false;
+    save();draw();refreshTop();
+    showDetail(o,u?u.name+' için çıkan':'Çıkan seçenek','Tamam');
+  };
+  cv.addEventListener('transitionend',fin,{once:true});
+  setTimeout(fin,5400);
+}
+$('push').onclick=spin;
+
+/* çarka dokun → detay */
+cv.addEventListener('click',e=>{
+  if(spinning)return;
+  const list=active(),n=list.length;if(!n)return;
+  const r=cv.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  const dx=e.clientX-cx,dy=e.clientY-cy,dist=Math.hypot(dx,dy);
+  if(dist>r.width/2||dist<r.width*0.12)return;
+  const phi=Math.atan2(dx,-dy);
+  const o=list[indexAtTheta(phi-rot,n)];
+  showDetail(o,'');
+});
+
+/* ---------- Log ---------- */
+function openLog(){
+  const box=$('logList');
+  if(!S.log.length){box.innerHTML='<div class="muted">Henüz çevirme yok.</div>'}
+  else{
+    box.innerHTML=S.log.map((l,i)=>({l,i})).reverse().map(({l,i})=>
+      `<div class="logitem" data-i="${i}"><span class="no">${i+1}</span><span class="dot" style="background:${l.color}"></span><div>${l.user?`<div class="who">${esc(l.user)}</div><div class="what">${esc(l.title)}</div>`:`<div class="who">${esc(l.title)}</div>`}</div></div>`).join('');
+    box.querySelectorAll('.logitem').forEach(el=>el.onclick=()=>{
+      const l=S.log[+el.dataset.i];$('ovLog').classList.remove('open');
+      showDetail({title:l.title,detail:l.detail,img:l.img,color:l.color},l.user?l.user+' için çıkmıştı':'Daha önce çıkmıştı');
+    });
+  }
+  $('ovLog').classList.add('open');
+}
+$('btnLog').onclick=openLog;
+$('logClose').onclick=()=>$('ovLog').classList.remove('open');
+$('ovLog').addEventListener('click',e=>{if(e.target===$('ovLog'))$('ovLog').classList.remove('open')});
+
+/* ---------- Sıfırla ---------- */
+$('btnReset').onclick=()=>{
+  if(spinning)return;
+  confirmBox('Turu sıfırla','Log temizlenecek ve sıra ilk kullanıcıya dönecek. Kullanıcılar ve seçenekler silinmez.','Sıfırla',()=>{
+    S.log=[];S.used=[];S.turn=0;save();draw();refreshTop();
+  });
+};
+
+/* ---------- Ayarlar ---------- */
+$('btnSettings').onclick=()=>{if(spinning)return;$('wheelName').value=S.name;renderUsers();renderOpts();$('sheet').classList.add('open')};
+$('sheetClose').onclick=()=>{$('sheet').classList.remove('open');draw();refreshTop()};
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  $('tabUsers').style.display=b.dataset.tab==='users'?'':'none';
+  $('tabOpts').style.display=b.dataset.tab==='opts'?'':'none';
+});
+
+function renderUsers(){
+  $('useUsers').checked=S.useUsers;$('usersPanel').style.display=S.useUsers?'':'none';
+  $('userCount').textContent=`${S.users.length}/${MAX_USERS} kullanıcı`;
+  $('userList').innerHTML=S.users.map(u=>
+    `<div class="item" data-id="${u.id}"><div class="name"><input type="text" value="${esc(u.name)}" maxlength="24"></div><button class="mini del">Sil</button></div>`).join('')
+    ||'<div class="muted">Kullanıcı yok.</div>';
+  $('userList').querySelectorAll('.item').forEach(el=>{
+    const id=+el.dataset.id;
+    el.querySelector('input').onchange=e=>{const u=S.users.find(x=>x.id===id);const v=e.target.value.trim();if(u&&v){u.name=v;save()}else if(u)e.target.value=u.name};
+    el.querySelector('.del').onclick=()=>{
+      const idx=S.users.findIndex(x=>x.id===id);
+      if(idx<0)return;
+      S.users.splice(idx,1);
+      if(S.users.length){if(idx<S.turn)S.turn--;S.turn%=S.users.length}else S.turn=0;
+      save();renderUsers();refreshTop();
+    };
+  });
+}
+function addUser(){
+  const v=$('userName').value.trim();
+  if(!v||S.users.length>=MAX_USERS)return;
+  S.users.push({id:uid(),name:v});$('userName').value='';save();renderUsers();refreshTop();
+}
+$('userAdd').onclick=addUser;
+$('useUsers').onchange=e=>{S.useUsers=e.target.checked;save();renderUsers();refreshTop()};
+$('userName').addEventListener('keydown',e=>{if(e.key==='Enter')addUser()});
+
+let editId=null, tmpImg='';
+function renderOpts(){
+  $('optCount').textContent=`${S.opts.length}/${MAX_OPTS} seçenek`;
+  $('noRepeat').checked=S.noRepeat;$('noLast').checked=S.noLast;
+  $('optList').innerHTML=S.opts.map(o=>
+    `<div class="item" data-id="${o.id}"><span class="dot" style="background:${o.color};margin:0"></span>${o.img?`<img src="${o.img}" alt="">`:''}<div class="name">${esc(o.title)}</div><button class="mini ed">Düzenle</button><button class="mini del">Sil</button></div>`).join('')
+    ||'<div class="muted">Seçenek yok.</div>';
+  $('optList').querySelectorAll('.item').forEach(el=>{
+    const id=+el.dataset.id;
+    el.querySelector('.ed').onclick=()=>{
+      const o=S.opts.find(x=>x.id===id);if(!o)return;
+      editId=id;tmpImg=o.img;$('optTitle').value=o.title;$('optDetail').value=o.detail;
+      syncImg();$('optSave').textContent='Kaydet';$('optCancel').style.display='';
+      $('tabOpts').scrollTo({top:0,behavior:'smooth'});
+    };
+    el.querySelector('.del').onclick=()=>{
+      S.opts=S.opts.filter(x=>x.id!==id);S.used=S.used.filter(x=>x!==id);
+      if(editId===id)resetForm();
+      save();renderOpts();
+    };
+  });
+  $('optSave').disabled=editId===null&&S.opts.length>=MAX_OPTS;
+}
+function syncImg(){
+  $('optPrev').style.display=tmpImg?'':'none';if(tmpImg)$('optPrev').src=tmpImg;
+  $('optImgDel').style.display=tmpImg?'':'none';
+}
+function resetForm(){editId=null;tmpImg='';$('optTitle').value='';$('optDetail').value='';$('optFile').value='';syncImg();$('optSave').textContent='Seçenek ekle';$('optCancel').style.display='none'}
+$('optCancel').onclick=resetForm;
+$('optPick').onclick=()=>$('optFile').click();
+$('optImgDel').onclick=()=>{tmpImg='';$('optFile').value='';syncImg()};
+$('optFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{
+      const M=420,k=Math.min(1,M/Math.max(im.width,im.height));
+      const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      tmpImg=c.toDataURL('image/jpeg',.72);syncImg();
+    };
+    im.src=fr.result;
+  };
+  fr.readAsDataURL(f);
+};
+$('optSave').onclick=()=>{
+  const t=$('optTitle').value.trim();if(!t){$('optTitle').focus();return}
+  const d=$('optDetail').value.trim();
+  if(editId!==null){
+    const o=S.opts.find(x=>x.id===editId);if(o){o.title=t;o.detail=d;o.img=tmpImg}
+  }else{
+    if(S.opts.length>=MAX_OPTS)return;
+    S.opts.push({id:uid(),title:t,detail:d,img:tmpImg,color:colorFor(S.opts.length)});
+  }
+  resetForm();save();renderOpts();
+};
+$('noLast').onchange=e=>{S.noLast=e.target.checked;save();draw();refreshTop()};
+$('noRepeat').onchange=e=>{S.noRepeat=e.target.checked;if(!S.noRepeat)S.used=[];save()};
+$('optClear').onclick=()=>{
+  if(!S.opts.length)return;
+  confirmBox('Tüm seçenekler silinsin mi?','Bu işlem geri alınamaz.','Sil',()=>{S.opts=[];S.used=[];resetForm();save();renderOpts()});
+};
+
+/* ---------- Çarklar ---------- */
+function switchTo(id){
+  if(spinning)return;
+  const w=R.wheels.find(x=>x.id===id);if(!w)return;
+  S=w;R.cur=id;rot=0;setRot(0,false);save();draw();refreshTop();
+  $('ovWheels').classList.remove('open');
+}
+function renderWheels(){
+  $('wheelList').innerHTML=R.wheels.map(w=>
+    `<div class="item${w.id===R.cur?' cur':''}" data-id="${w.id}"><div class="grow"><b>${esc(w.name||'Adsız çark')}</b><small>${w.users.length} kullanıcı · ${w.opts.length} seçenek${w.id===R.cur?' · açık':''}</small></div><button class="mini sh">Paylaş</button><button class="mini del">Sil</button></div>`).join('');
+  $('wheelList').querySelectorAll('.item').forEach(el=>{
+    const id=+el.dataset.id;
+    el.querySelector('.grow').onclick=()=>switchTo(id);
+    el.querySelector('.sh').onclick=()=>openShare(R.wheels.find(x=>x.id===id));
+    el.querySelector('.del').onclick=()=>{
+      if(R.wheels.length<2){confirmBox('Silinemez','En az bir çark kalmalı. Önce yeni bir çark oluştur.','Tamam',()=>{});return}
+      const w=R.wheels.find(x=>x.id===id);
+      $('ovWheels').classList.remove('open');
+      confirmBox('Çark silinsin mi?','"'+(w.name||'Adsız çark')+'" kullanıcıları, seçenekleri ve logu ile silinecek.','Sil',()=>{
+        R.wheels=R.wheels.filter(x=>x.id!==id);
+        if(R.cur===id){S=R.wheels[0];R.cur=S.id;rot=0;setRot(0,false)}
+        save();draw();refreshTop();renderWheels();$('ovWheels').classList.add('open');
+      });
+    };
+  });
+}
+/* ---------- Paylaş / İçe aktar ---------- */
+const SHARE=(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Share)||null;
+const FSP=(window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Filesystem)||null;
+let shareW=null;
+function exportJson(w,withImg){
+  return JSON.stringify({app:'roulette',v:1,name:w.name,options:w.opts.map(o=>({title:o.title,detail:o.detail,img:withImg?o.img:''}))});
+}
+function openShare(w){
+  if(!w)return;shareW=w;$('shImg').checked=true;$('shMsg').textContent='';updateShare();
+  $('ovWheels').classList.remove('open');$('ovShare').classList.add('open');
+}
+function updateShare(){
+  const j=exportJson(shareW,$('shImg').checked);
+  $('shInfo').textContent=`${shareW.name} · ${shareW.opts.length} seçenek · ${Math.max(1,Math.round(j.length/1024))} KB`;
+  $('shImgRow').style.display=shareW.opts.some(o=>o.img)?'':'none';
+  const wa=$('shWa');
+  if(j.length<=3000){wa.href='https://wa.me/?text='+encodeURIComponent(j);wa.style.display='block'}else wa.style.display='none';
+  $('shBox').style.display='none';
+}
+$('shImg').onchange=updateShare;
+$('shClose').onclick=()=>$('ovShare').classList.remove('open');
+$('ovShare').addEventListener('click',e=>{if(e.target===$('ovShare'))$('ovShare').classList.remove('open')});
+$('shSend').onclick=async()=>{
+  const j=exportJson(shareW,$('shImg').checked);
+  const fname=((shareW.name||'cark').replace(/[^\p{L}\p{N}_-]+/gu,'_').slice(0,30)||'cark')+'.json';
+  try{
+    if(SHARE&&FSP){
+      const r=await FSP.writeFile({path:fname,data:j,directory:'CACHE',encoding:'utf8'});
+      await SHARE.share({title:shareW.name,text:'Roulette çarkı: '+shareW.name,files:[r.uri],dialogTitle:'Çarkı paylaş'});
+      return;
+    }
+    const f=new File([j],fname,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:shareW.name});return}
+  }catch(e){
+    if(/cancel|abort/i.test((e&&(e.message||e.name))||''))return;
+  }
+  $('shMsg').textContent='Bu cihazda doğrudan paylaşım yok. "Kopyala" ile kopyalayıp WhatsApp\'a yapıştırabilirsin.';
+};
+$('shCopy').onclick=async()=>{
+  const j=exportJson(shareW,$('shImg').checked);
+  try{await navigator.clipboard.writeText(j);$('shMsg').textContent='Kopyalandı. Arkadaşına yapıştırıp gönder.';return}catch(e){}
+  const b=$('shBox');b.value=j;b.style.display='block';b.focus();b.select();
+  $('shMsg').textContent='Otomatik kopyalanamadı. Metni seçip elle kopyala.';
+};
+function importText(t){
+  let d;
+  try{const a=t.indexOf('{'),b=t.lastIndexOf('}');d=JSON.parse(t.slice(a,b+1))}catch(e){return 'Geçerli bir çark verisi bulunamadı.'}
+  if(!d||d.app!=='roulette'||!Array.isArray(d.options))return 'Bu bir Roulette çarkı gibi görünmüyor.';
+  const src=d.options.filter(o=>o&&typeof o.title==='string'&&o.title.trim()).slice(0,MAX_OPTS);
+  if(!src.length)return 'Çarkta seçenek yok.';
+  const w=newWheel(String(d.name||'İçe aktarılan çark').slice(0,30));w.id=uid();
+  w.opts=src.map((o,i)=>({id:uid(),title:o.title.trim().slice(0,40),
+    detail:typeof o.detail==='string'?o.detail.slice(0,2000):'',
+    img:(typeof o.img==='string'&&o.img.length<600000&&/^data:image\/(jpeg|png|webp|gif);base64,/.test(o.img))?o.img:'',
+    color:colorFor(i)}));
+  w.useUsers=S.useUsers;
+  R.wheels.push(w);$('ovImport').classList.remove('open');switchTo(w.id);
+  return null;
+}
+$('btnImport').onclick=()=>{$('impText').value='';$('impMsg').textContent='';$('ovWheels').classList.remove('open');$('ovImport').classList.add('open')};
+$('impClose').onclick=()=>$('ovImport').classList.remove('open');
+$('impPick').onclick=()=>$('impFile').click();
+$('impFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const fr=new FileReader();
+  fr.onload=()=>{const m=importText(String(fr.result));$('impMsg').textContent=m||'';e.target.value=''};
+  fr.readAsText(f);
+};
+$('impGo').onclick=()=>{const t=$('impText').value.trim();if(!t){$('impMsg').textContent='Önce metni yapıştır ya da dosya seç.';return}const m=importText(t);$('impMsg').textContent=m||''};
+
+$('btnWheels').onclick=()=>{if(spinning)return;$('newWheelName').value='';renderWheels();$('ovWheels').classList.add('open')};
+$('wheelsClose').onclick=()=>$('ovWheels').classList.remove('open');
+$('ovWheels').addEventListener('click',e=>{if(e.target===$('ovWheels'))$('ovWheels').classList.remove('open')});
+$('wheelAdd').onclick=()=>{
+  if(spinning)return;
+  const name=$('newWheelName').value.trim()||('Çark '+(R.wheels.length+1));
+  const w=newWheel(name);w.id=uid();
+  if($('copyUsers').checked)w.users=S.users.map(u=>({id:uid(),name:u.name}));
+  w.useUsers=S.useUsers;
+  R.wheels.push(w);switchTo(w.id);
+};
+$('wheelName').onchange=e=>{S.name=e.target.value.trim()||S.name||'Çark';e.target.value=S.name;save();refreshTop()};
+$('wheelName').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+
+(async function boot(){
+  let ok=false;
+  if(PREF){try{const r=await PREF.get({key:KEY});ok=applyData(r&&r.value)}catch(e){}}
+  if(!ok){try{ok=applyData(localStorage.getItem(KEY))}catch(e){}}
+  if(!ok){S=newWheel('Çark 1');S.id=uid();R.wheels=[S];R.cur=S.id;seedDefaults();save()}
+  draw();refreshTop();
+})();
+})();
+</script>
+</body>
+</html>
