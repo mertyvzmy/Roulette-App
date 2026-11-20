@@ -1,0 +1,16 @@
+{
+  "name": "roulette-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Roulette mobil uygulamas\u0131",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/preferences": "^6.0.2",
+    "@capacitor/share": "^6.0.2",
+    "@capacitor/filesystem": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
